@@ -5,8 +5,14 @@ const FormData = require("form-data");
 
 var exports = module.exports = {};
 
-exports.get = function( device, path, resonseType, callback ) {
-//	console.log("VapixDigest.get");
+exports.HTTP_Get = function( device, path, resonseType, callback ) {
+	if( !device || !device.hasOwnProperty("address") || !device.hasOwnProperty("user") || !device.hasOwnProperty("password") ) {
+			callback("Invalid input","Missing address,user or password");
+			return;
+	}
+	var protocol = device.protocol || "http";
+	var url = protocol + "://" + device.address + path;
+	
 	var client = got.extend({
 		hooks:{
 			afterResponse: [
@@ -32,23 +38,36 @@ exports.get = function( device, path, resonseType, callback ) {
 	
 	(async () => {
 		try {
-			console.log("VapixDigest.get: ", device.url, path);
-			const response = await client.get( device.url + path,{
+			const response = await client.get( url,{
 				responseType: resonseType,
 				https:{rejectUnauthorized: false}
 			});
-//			console.log("VapixDigest Response: ", response );
 			callback(false, response.body );
 		} catch (error) {
-//			console.log("VapixDigest Response Error: ", error );
 			callback(error, error );
 		}
 	})();
 
 }
 
-exports.post = function( device, path, body, responseType, callback ) {
-//	console.log("AxisDigest", path, responseType);
+exports.HTTP_Post = function( device, path, body, responseType, callback ) {
+	if( !device || !device.hasOwnProperty("address") || !device.hasOwnProperty("user") || !device.hasOwnProperty("password") ) {
+			callback("Invalid input","Missing address,user or password");
+			return;
+	}
+
+	if(!body) {
+		callback("Invalid input", "Missing POST body");
+		return;
+	}
+
+	var payload = body;
+	if( typeof body === "object" )
+		payload = JSON.stringify(body);
+	
+	var protocol = device.protocol || "http";
+	var url = protocol + "://" + device.address + path;
+	console.log("Digest POST:", url, payload);
 	var client = got.extend({
 		hooks:{
 			afterResponse: [
@@ -74,15 +93,15 @@ exports.post = function( device, path, body, responseType, callback ) {
 
 	(async () => {
 		try {
-			response = await client.post( device.url+path, {
-				body: body,
+			response = await client.post( url, {
+				body: payload,
 				responseType: responseType,
 				https: {rejectUnauthorized: false}
 			});
-//			console.log("AxisDigest Post Response:", response.body );
+			console.log("Digest Post Response:", url, response.body);
 			callback(false, response.body );
 		} catch (error) {
-//			console.log("AxisDigest Post Response Error:", error );
+			console.log("Digest Post Response Error:", error);
 			callback(error, error  );
 		}
 	})();
@@ -104,12 +123,18 @@ exports.Soap = function( device, body, callback ) {
 					   
 	soapEnvelope += '<SOAP-ENV:Body>' + body + '</SOAP-ENV:Body>';
 	soapEnvelope += '</SOAP-ENV:Envelope>';
-	exports.post( device, '/vapix/services', soapEnvelope,"text", function( error, response) {
+	exports.HTTP_Post( device, '/vapix/services', soapEnvelope,"text", function( error, response) {
 		callback(error,response);
 	});
 }
 
 exports.upload = function( device, type, filename, options, buffer, callback ) {
+	if( !device || !device.hasOwnProperty("address") || !device.hasOwnProperty("user") || !device.hasOwnProperty("password") ) {
+			callback("Invalid input","Missing address,user or password");
+			return;
+	}
+	var protocol = device.protocol || "http";
+	var url = protocol + "://" + device.address;
 
 	if(!buffer) {
 		callback(true,"Invalid upload buffer");
@@ -137,14 +162,13 @@ exports.upload = function( device, type, filename, options, buffer, callback ) {
 		method: ""
 	}
 	
-	var url = null;
 	var part1 = null;
 	var part2 = null;
 	var contenttype = "application/octet-stream";
 		
 	switch( type ) {
 		case "firmware":
-			url =  device.url + '/axis-cgi/firmwaremanagement.cgi';
+			url +=  '/axis-cgi/firmwaremanagement.cgi';
 			part1 = "data";
 			part2 = "fileData";
 			formData.method = "upgrade";
@@ -152,14 +176,14 @@ exports.upload = function( device, type, filename, options, buffer, callback ) {
 		break;
 
 		case "firmware_legacy":
-			url =  device.url + '/axis-cgi/firmwareupgrade.cgi?type=normal';
+			url +=  '/axis-cgi/firmwareupgrade.cgi?type=normal';
 			part1 = null;
 			part2 = "fileData";
 			contenttype = "application/octet-stream";
 		break;
 
 		case "acap":
-			url = device.url + "/axis-cgi/packagemanager.cgi";
+			url += "/axis-cgi/packagemanager.cgi";
 			part1 = "data";
 			part2 = "fileData";
 			formData.method = "install";
@@ -167,14 +191,14 @@ exports.upload = function( device, type, filename, options, buffer, callback ) {
 		break;
 
 		case "acap_legacy":
-			url = device.url + "/axis-cgi/applications/upload.cgi";
+			url += "/axis-cgi/applications/upload.cgi";
 			part1 = null;
 			part2 = "packfil";
 			contenttype = "application/octet-stream";
 		break;
 		
 		case "overlay":
-			url =  device.url + '/axis-cgi/uploadoverlayimage.cgi';
+			url += '/axis-cgi/uploadoverlayimage.cgi';
 			part1 = "json";
 			part2 = "image";
 			formData.method = "uploadOverlayImage";

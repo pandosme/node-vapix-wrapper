@@ -24,17 +24,14 @@ exports.Post = function( device, cgi, payload, responseType, callback ) {
 }
 
 exports.Param_Get = function( device, paramPath, callback ) {
+	console.log("Param_Get:", device, paramPath);
 	if( !paramPath || paramPath.length === 0 || paramPath.toLowerCase ( ) === "root" ) {
 		callback(true,"Invalid parameter path.  Set data to a valid parameter group" );
 		return;
 	}
-	VapixDigest.get( device, '/axis-cgi/param.cgi?action=list&group=' + paramPath, "text", function( error, body ) {
+	exports.CGI( device, '/axis-cgi/param.cgi?action=list&group=' + paramPath, "text", function( error, body ) {
 		if( error ) {
 			callback( error, "Unable to request " + paramPath );
-			return;
-		}
-		if( body.search("Error") >= 0 ) {
-			callback( true, body);
 			return;
 		}
 		var params = VapixParser.param2json(body);
