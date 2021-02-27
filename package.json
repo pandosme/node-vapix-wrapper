@@ -1,5 +1,5 @@
 {
-  "name": "VapixWrapper",
+  "name": "vapix-wrapper",
   "version": "0.1.0",
   "description": "Axis VAPIX Request and Parser",
   "author": {
@@ -7,10 +7,10 @@
     "email": "fred.juhlin.gmail.com"
   },
   "license": "MIT",
-  "main": "VapixWrapper.js",
+  "main": "vapix-wrapper.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/pandosme/node-VapixWrapper.git"
+    "url": "https://github.com/pandosme/node-vapix-wrapper.git"
   },
   "dependencies" : {
     "@mreal/digest-auth": "^1.1.3",

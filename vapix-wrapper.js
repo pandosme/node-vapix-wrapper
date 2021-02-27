@@ -1,6 +1,6 @@
 const fs = require("fs");
-const VapixDigest = require("./VapixDigest.js");
-const VapixParser = require("./VapixParser.js");
+const VapixDigest = require("./vapix-digest.js");
+const VapixParser = require("./vapix-parser.js");
 
 var exports = module.exports = {};
 
@@ -292,6 +292,7 @@ exports.Location_Set = function( device, data, callback ) {
 }
 
 exports.ACAP_List = function( device, callback ) {
+//	console.log("ACAP_List");
 	VapixDigest.get( device, '/axis-cgi/applications/list.cgi', "text", function(error, response) {
 		if( error ) {
 			callback( true, response );

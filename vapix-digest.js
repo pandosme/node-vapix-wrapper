@@ -6,6 +6,7 @@ const FormData = require("form-data");
 var exports = module.exports = {};
 
 exports.get = function( device, path, resonseType, callback ) {
+//	console.log("VapixDigest.get");
 	var client = got.extend({
 		hooks:{
 			afterResponse: [
@@ -31,12 +32,15 @@ exports.get = function( device, path, resonseType, callback ) {
 	
 	(async () => {
 		try {
-			const response = await client.get( device.url+path,{
+			console.log("VapixDigest.get: ", device.url, path);
+			const response = await client.get( device.url + path,{
 				responseType: resonseType,
 				https:{rejectUnauthorized: false}
 			});
+//			console.log("VapixDigest Response: ", response );
 			callback(false, response.body );
 		} catch (error) {
+//			console.log("VapixDigest Response Error: ", error );
 			callback(error, error );
 		}
 	})();
