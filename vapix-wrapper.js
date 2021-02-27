@@ -4,34 +4,53 @@ const VapixParser = require("./vapix-parser.js");
 
 var exports = module.exports = {};
 
-exports.JPEG = function( device, profile, callback ) {
-	VapixDigest.get( device, '/axis-cgi/jpg/image.cgi?' + profile, "buffer", function( error, body ) {
+exports.HTTP_Get = function( device, cgi, responseType, callback ) {
+	VapixDigest.HTTP_Get( device, cgi, responseType, function( error, body ) {
 		callback( error, body );
 	});
 }
 
-exports.Get = function( device, cgi, responseType, callback ) {
-	VapixDigest.get( device, cgi, responseType, function( error, body ) {
-		callback( error, body );
-	});
-}
-
-exports.Post = function( device, cgi, payload, responseType, callback ) {
+exports.HTTP_Post = function( device, cgi, payload, responseType, callback ) {
 //	console.log("VAPIX.Post", cgi, responseType);
-	VapixDigest.post( device, cgi, payload, responseType, function( error, body ) {
+	VapixDigest.HTTP_Post( device, cgi, payload, responseType, function( error, body ) {
+		callback( error, body );
+	});
+}
+
+exports.CGI = function( device, cgi, callback ) {
+	VapixDigest.HTTP_Get( device, cgi, "text", function( error, body ) {
+		if( body.search("Error") >= 0 ) {
+			callback( true, body);
+			return;
+		}
+		callback( error, body );
+	});
+}
+
+exports.CGI_Post = function( device, cgi, request, callback ) {
+	VapixDigest.HTTP_Post( device, cgi, request, "json", function( error, body ) {
+		if( body.hasOwnProperty("error") ) {
+			callback( true, body.error);
+			return;
+		}
+		callback( error, body );
+	});
+}
+
+exports.JPEG = function( device, profile, callback ) {
+	VapixDigest.HTTP_Get( device, '/axis-cgi/jpg/image.cgi?' + profile, "buffer", function( error, body ) {
 		callback( error, body );
 	});
 }
 
 exports.Param_Get = function( device, paramPath, callback ) {
-	console.log("Param_Get:", device, paramPath);
 	if( !paramPath || paramPath.length === 0 || paramPath.toLowerCase ( ) === "root" ) {
-		callback(true,"Invalid parameter path.  Set data to a valid parameter group" );
+		callback("Invalid input","Invalid parameter group" );
 		return;
 	}
-	exports.CGI( device, '/axis-cgi/param.cgi?action=list&group=' + paramPath, "text", function( error, body ) {
+	exports.CGI( device, '/axis-cgi/param.cgi?action=list&group=' + paramPath, function( error, body ) {
 		if( error ) {
-			callback( error, "Unable to request " + paramPath );
+			callback( error, body );
 			return;
 		}
 		var params = VapixParser.param2json(body);
@@ -41,12 +60,12 @@ exports.Param_Get = function( device, paramPath, callback ) {
 
 exports.Param_Set = function( device, group, parameters, callback ) {
 	if( !group || group.length == 0 ) {
-		callback( true, "Undefined property group");
+		callback( "Invalid input", "Undefined parameter group");
 		return;
 	}
 
 	if( !parameters || !(typeof parameters === 'object') ) {
-		callback( true, "Input is not a valid object");
+		callback( "Invlaid input", "Parameters need to be an object");
 		return;
 	}
 	var cgi = '/axis-cgi/param.cgi?action=update';
@@ -63,13 +82,9 @@ exports.Param_Set = function( device, group, parameters, callback ) {
 		}
 	}
 	
-	VapixDigest.get( device, cgi, "text", function( error, body ) {
+	exports.CGI( device, cgi, function( error, body ) {
 		if( error ) {
-			callback( error, "Unable to set parameters" );
-			return;
-		}
-		if( body.search("Error") >= 0 ) {
-			callback( true, body);
+			callback( error, body );
 			return;
 		}
 		callback( false, body );
@@ -156,7 +171,7 @@ exports.DeviceInfo = function( device, callback ) {
 }
 
 exports.Reboot = function( device, callback ) {
-	VapixDigest.get( device, '/axis-cgi/restart.cgi', "text", function(error, response) {
+	exports.CGI( device, '/axis-cgi/restart.cgi', function(error, response) {
 		if( error ) {
 			callback( error, response );
 			return;
@@ -166,7 +181,7 @@ exports.Reboot = function( device, callback ) {
 }
 
 exports.Syslog = function( device, callback ) {
-	VapixDigest.get( device, '/axis-cgi/systemlog.cgi', "text", function(error, response) {
+	VapixDigest.HTTP_Get( device, '/axis-cgi/systemlog.cgi', "text", function(error, response) {
 		if( error ) {
 			callback( error, response );
 			return;
@@ -182,13 +197,9 @@ exports.GetTime = function( device, callback ) {
 		"context": "NodeRed",
 		"method": "getDateTimeInfo"
 	};
-	VapixDigest.post( device, "/axis-cgi/time.cgi", body, "json", function(error, response ) {
+	exports.CGI_Post( device, "/axis-cgi/time.cgi", body, function(error, response ) {
 		if( !error && response.hasOwnProperty("data") ) {
 			callback( false, response.data );
-			return;
-		}
-		if( !error && response.hasOwnProperty("error") ){
-			callback("Request failed", response.error );
 			return;
 		}
 		callback( error, response );
@@ -196,7 +207,7 @@ exports.GetTime = function( device, callback ) {
 }
 
 exports.Connections = function( device, callback ) {
-	VapixDigest.get( device, '/axis-cgi/admin/connection_list.cgi?action=get', "text", function(error, response) {
+	exports.CGI( device, '/axis-cgi/admin/connection_list.cgi?action=get', function(error, response) {
 		if( error ) {
 			callback( error, response );
 			return;
@@ -224,7 +235,7 @@ exports.Connections = function( device, callback ) {
 }
 
 exports.Location_Get = function( device, callback ) {
-	VapixDigest.get( device, '/axis-cgi/geolocation/get.cgi', "text", function(error, response) {
+	exports.CGI( device, '/axis-cgi/geolocation/get.cgi', function(error, response) {
 		if( error ) {
 			callback( error, response );
 			return;
@@ -271,11 +282,12 @@ exports.Location_Set = function( device, data, callback ) {
 	if( lngInt >= 100 )
 		lngZ = "";
 	
-	cgi += "lat=" + latSign + latZ + location.latitude;
-	cgi += "&lng=" + lngSign + lngZ + location.longitude;
+	cgi += "lat=" + latSign + latZ + parseFloat(location.latitude).toFixed(8);
+	cgi += "&lng=" + lngSign + lngZ + parseFloat(location.longitude).toFixed(8);
 	cgi += "&heading=" + location.direction;
 	cgi += "&text=" + encodeURIComponent(location.text);
-	VapixDigest.get( device, cgi, "text", function(error, response) {
+	console.log("Location_Set", cgi);
+	exports.CGI( device, cgi, function(error, response) {
 		if( error ) {
 			callback( error, response );
 			return;
@@ -289,13 +301,8 @@ exports.Location_Set = function( device, data, callback ) {
 }
 
 exports.ACAP_List = function( device, callback ) {
-//	console.log("ACAP_List");
-	VapixDigest.get( device, '/axis-cgi/applications/list.cgi', "text", function(error, response) {
+	exports.CGI( device, '/axis-cgi/applications/list.cgi', function(error, response) {
 		if( error ) {
-			callback( true, response );
-			return;
-		}
-		if( response.search("Error") >= 0 ) {
 			callback( true, response );
 			return;
 		}
@@ -306,19 +313,18 @@ exports.ACAP_List = function( device, callback ) {
 }
 
 exports.ACAP_Control = function( device, action, acapID, callback ) {
-	//Actions:  "start", "stop", "remove"
 	if( !action || action.length == 0 ) {
-		callback( true, "Invalid ACAP control action");
+		callback( "Invlaid input", "Missing ACAP control action");
 		return;
 	}
 	
 	if( !acapID || acapID.length == 0 || acapID.length > 20 ) {
-		callback( true, "Invalid ACAP ID");
+		callback( "Invalid input", "Invalid ACAP ID");
 		return;
 	}
 	
 	var cgi =  '/axis-cgi/applications/control.cgi?action=' + action + '&package=' + acapID;
-	VapixDigest.get( device, cgi, "text", function(error, response) {
+	exports.CGI( device, cgi, function(error, response) {
 		if( error ) {
 			callback( true, response );
 			return;
@@ -341,13 +347,9 @@ exports.ACAP_Control = function( device, action, acapID, callback ) {
 }
 
 exports.Account_List = function( device, callback) {
-	VapixDigest.get( device, '/axis-cgi/pwdgrp.cgi?action=get', "text", function( error, response ) {
+	exports.CGI( device, '/axis-cgi/pwdgrp.cgi?action=get', function( error, response ) {
 		if( error ) {
 			callback( true, error );
-			return;
-		}
-		if( response.search("Error") >= 0 ) {
-			callback( "Request failed", response);
 			return;
 		}
 		VapixParser.Accounts2JSON( response, function( error, json ) {
@@ -375,7 +377,7 @@ exports.Account_Set = function( device, options, callback) {
 	}
 
 	var cgi = '/axis-cgi/pwdgrp.cgi?action=update&user=' + account.name + '&pwd=' + encodeURIComponent(account.password);
-	VapixDigest.get( device, cgi, "text", function( error, response ) {
+	VapixDigest.HTTP_Get( device, cgi, "text", function( error, response ) {
 		if( error ) {
 			callback(error, response);
 			return;
@@ -391,7 +393,7 @@ exports.Account_Set = function( device, options, callback) {
 			if( account.privileges.toLowerCase() === "api" )
 				sgrp = "operator:admin";
 			cgi = '/axis-cgi/pwdgrp.cgi?action=add&user=' + account.name + '&pwd=' + encodeURIComponent(account.password) + '&grp=users&sgrp=' + sgrp + '&comment=node';
-			VapixDigest.get( device, cgi, "text", function( error, response ) {	
+			VapixDigest.HTTP_Get( device, cgi, "text", function( error, response ) {	
 				if( error ) {
 					callback( true, response );
 					return;
@@ -409,44 +411,20 @@ exports.Account_Set = function( device, options, callback) {
 	});
 };
 
-exports.Account_Remove = function( device, namme, callback) {
-	if( !name || typeof nme !== "string" ) {
+exports.Account_Remove = function( device, accountName, callback) {
+	if( !accountName || typeof accountName !== "string" || accountName.length === 0 || accountName.length > 64) {
 		callback("Invalid input","Invalid account name");
 		return;
 	}
-	var cgi  = "/axis-cgi/pwdgrp.cgi?action=remove&user=" + options;
-	VapixDigest.get( device, cgi, "text", function( error, response ) {
+	var cgi  = "/axis-cgi/pwdgrp.cgi?action=remove&user=" + accountName;
+	exports.CGI( device, cgi, function( error, response ) {
 		if( error ) {
 			callback(error, response );
-			return;
-		}
-		if( response.search("Error") >= 0 ) {
-			callback( "Request failed", response);
 			return;
 		}
 		callback(false,"OK");
 	});
 };
-
-exports.Account_Remove = function( device, accountName, callback ) {
-	if( !accountName || typeof accountName !== "string" || accountName.length === 0) {
-		callback("Invalid input","Invalid account name");
-		return;
-	}
-	
-	var cgi  = "/axis-cgi/pwdgrp.cgi?action=remove&user=" + accountName;
-	exports.get( device, cgi, function( error, response ) {
-		if( error ) {
-			callback(true, response );
-			return;
-		}
-		if( response.search("Error") >= 0 ) {
-			callback( true, "Unable to remove account");
-			return;
-		}
-		callback(false,"OK");
-	});
-}
 
 exports.Upload_Firmare = function( device , options, callback ) {
 //	console.log("Firmware upgrade.");
