@@ -18,7 +18,12 @@ exports.HTTP_Post = function( device, cgi, payload, responseType, callback ) {
 }
 
 exports.CGI = function( device, cgi, callback ) {
+	console.log("CGI", device, cgi);
 	VapixDigest.HTTP_Get( device, cgi, "text", function( error, body ) {
+		if(error) {
+			callback(error,body);
+			return;
+		}
 		if( body.search("Error") >= 0 ) {
 			callback( true, body);
 			return;
@@ -29,11 +34,19 @@ exports.CGI = function( device, cgi, callback ) {
 
 exports.CGI_Post = function( device, cgi, request, callback ) {
 	VapixDigest.HTTP_Post( device, cgi, request, "json", function( error, body ) {
-		if( body.hasOwnProperty("error") ) {
-			callback( true, body.error);
+		if( error ) {
+			callback(error,body);
 			return;
 		}
-		callback( error, body );
+		if( body.hasOwnProperty("error") ) {
+			callback( "Invalid request", body.error);
+			return;
+		}
+		if( !body.hasOwnProperty("data") ) {
+			callback( "Invalid response", body );
+			return;
+		}
+		callback( error, body.data );
 	});
 }
 
@@ -198,10 +211,6 @@ exports.GetTime = function( device, callback ) {
 		"method": "getDateTimeInfo"
 	};
 	exports.CGI_Post( device, "/axis-cgi/time.cgi", body, function(error, response ) {
-		if( !error && response.hasOwnProperty("data") ) {
-			callback( false, response.data );
-			return;
-		}
 		callback( error, response );
 	});
 }
@@ -248,7 +257,7 @@ exports.Location_Get = function( device, callback ) {
 
 exports.Location_Set = function( device, data, callback ) {
 	var location = data;
-	if( typeof data === "string")
+	if( typeof data === "string" && data[0] === '{')
 		location = JSON.parse(data);
 
 	if( !location || 
@@ -303,11 +312,11 @@ exports.Location_Set = function( device, data, callback ) {
 exports.ACAP_List = function( device, callback ) {
 	exports.CGI( device, '/axis-cgi/applications/list.cgi', function(error, response) {
 		if( error ) {
-			callback( true, response );
+			callback( error, response );
 			return;
 		}
 		VapixParser.AcapList2JSON(response, function(error, data) {
-			callback( true, data );
+			callback( error, data );
 		});
 	});
 }
@@ -326,7 +335,7 @@ exports.ACAP_Control = function( device, action, acapID, callback ) {
 	var cgi =  '/axis-cgi/applications/control.cgi?action=' + action + '&package=' + acapID;
 	exports.CGI( device, cgi, function(error, response) {
 		if( error ) {
-			callback( true, response );
+			callback( error, response );
 			return;
 		}
 		response = response.trim();

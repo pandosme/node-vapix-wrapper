@@ -12,7 +12,7 @@ exports.HTTP_Get = function( device, path, resonseType, callback ) {
 	}
 	var protocol = device.protocol || "http";
 	var url = protocol + "://" + device.address + path;
-	
+	console.log("Digest GET: ", url); 
 	var client = got.extend({
 		hooks:{
 			afterResponse: [
