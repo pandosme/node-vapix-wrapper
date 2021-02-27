@@ -1,2 +1,2 @@
-# node-VapixWrapper
-Vapix request and parse wrapper library
+# VapixWrapper
+Simplifies working with Axis Vapix API request and response.
