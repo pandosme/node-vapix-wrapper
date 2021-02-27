@@ -4,7 +4,7 @@
   "description": "Axis VAPIX Request and Parser",
   "author": {
     "name": "Fred Juhlin",
-    "email": "fred@juhlin.me"
+    "email": "fred.juhlin.gmail.com"
   },
   "license": "MIT",
   "main": "VapixWrapper.js",
