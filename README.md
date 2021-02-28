@@ -4,10 +4,10 @@ A library that simplifies working with Axis VAPIX API request and response.
 ## Device
 The device object uses the following properties:
 
-address:  string (IP Address or FQDN)
-user: string (Device account user name)
-password: string (Device account password)
-protocol: string [OPTIONAL]  ('http' (default) or 'https')
+- address:  string (IP Address or FQDN)
+- user: string (Device account user name)
+- password: string (Device account password)
+- protocol: string [OPTIONAL]  ('http' (default) or 'https')
 
 Device:
 ```
