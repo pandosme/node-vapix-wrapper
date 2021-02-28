@@ -20,7 +20,7 @@ Device:
 ```
 
 ## Error
-All callbacks responds with an error.  On success, error is null, false or undefined.  On failure error will be true or a string dexribing the problem.
+All callbacks responds with an error.  On success, error is null, false or undefined.  On failure error will be true or a string describing the problem.
 
 ## HTTP_Get( device, cgi, responseType, callback )
 Makes a standard HTTP request without any processing nor parsing of response.  Typically used when requesting ACAP APIs.
