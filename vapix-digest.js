@@ -12,7 +12,7 @@ exports.HTTP_Get = function( device, path, resonseType, callback ) {
 	}
 	var protocol = device.protocol || "http";
 	var url = protocol + "://" + device.address + path;
-	console.log("Digest GET: ", url); 
+//	console.log("VapixWrapper HTTP_GET: ", url); 
 	var client = got.extend({
 		hooks:{
 			afterResponse: [
@@ -60,14 +60,16 @@ exports.HTTP_Post = function( device, path, body, responseType, callback ) {
 		callback("Invalid input", "Missing POST body");
 		return;
 	}
-
-	var payload = body;
+	
+	var json = null;
 	if( typeof body === "object" )
-		payload = JSON.stringify(body);
+		json = body;
+	if( typeof body === "string" && (body[0]==='{' || body[0]==='[' ))
+		json = JSON.parse( body );	
 	
 	var protocol = device.protocol || "http";
 	var url = protocol + "://" + device.address + path;
-	console.log("Digest POST:", url, payload);
+//	console.log("Digest POST:", url, body, responseType );
 	var client = got.extend({
 		hooks:{
 			afterResponse: [
@@ -93,15 +95,24 @@ exports.HTTP_Post = function( device, path, body, responseType, callback ) {
 
 	(async () => {
 		try {
-			response = await client.post( url, {
-				body: payload,
-				responseType: responseType,
-				https: {rejectUnauthorized: false}
-			});
-			console.log("Digest Post Response:", url, response.body);
+			var response = 0;
+			if( json )
+				response = await client.post( url, {
+												json: json,
+												responseType: 'json',
+												https: {rejectUnauthorized: false}					
+											});
+			else
+				response = await client.post( url, {
+												body: body,
+												responseType: responseType,
+												https: {rejectUnauthorized: false}
+											});
+				
+//			console.log("Digest Post Response:", url, response.body);
 			callback(false, response.body );
 		} catch (error) {
-			console.log("Digest Post Response Error:", error);
+			console.error("HTTP Response Error:", error);
 			callback(error, error  );
 		}
 	})();

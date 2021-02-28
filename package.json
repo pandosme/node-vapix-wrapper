@@ -1,7 +1,7 @@
 {
   "name": "vapix-wrapper",
-  "version": "0.4.0",
-  "description": "Axis VAPIX Request and Parser",
+  "version": "1.0.0",
+  "description": "Axis VAPIX request,parser & respond library",
   "author": {
     "name": "Fred Juhlin",
     "email": "fred.juhlin.gmail.com"

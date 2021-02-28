@@ -11,14 +11,14 @@ exports.HTTP_Get = function( device, cgi, responseType, callback ) {
 }
 
 exports.HTTP_Post = function( device, cgi, payload, responseType, callback ) {
-//	console.log("VAPIX.Post", cgi, responseType);
+//	console.log("VapixWrapper: HTTP_Post", cgi,, payload, responseType);
 	VapixDigest.HTTP_Post( device, cgi, payload, responseType, function( error, body ) {
 		callback( error, body );
 	});
 }
 
 exports.CGI = function( device, cgi, callback ) {
-	console.log("CGI", device, cgi);
+//	console.log("VapixWrapper: CGI", device, cgi);
 	VapixDigest.HTTP_Get( device, cgi, "text", function( error, body ) {
 		if(error) {
 			callback(error,body);
@@ -33,6 +33,7 @@ exports.CGI = function( device, cgi, callback ) {
 }
 
 exports.CGI_Post = function( device, cgi, request, callback ) {
+//	console.log("VapixWrapper: CGI_POST: ", cgi, request);
 	VapixDigest.HTTP_Post( device, cgi, request, "json", function( error, body ) {
 		if( error ) {
 			callback(error,body);
@@ -183,16 +184,6 @@ exports.DeviceInfo = function( device, callback ) {
 	});
 }
 
-exports.Reboot = function( device, callback ) {
-	exports.CGI( device, '/axis-cgi/restart.cgi', function(error, response) {
-		if( error ) {
-			callback( error, response );
-			return;
-		}
-		callback( false, "Device restarting" );
-	});
-}
-
 exports.Syslog = function( device, callback ) {
 	VapixDigest.HTTP_Get( device, '/axis-cgi/systemlog.cgi', "text", function(error, response) {
 		if( error ) {
@@ -295,7 +286,7 @@ exports.Location_Set = function( device, data, callback ) {
 	cgi += "&lng=" + lngSign + lngZ + parseFloat(location.longitude).toFixed(8);
 	cgi += "&heading=" + location.direction;
 	cgi += "&text=" + encodeURIComponent(location.text);
-	console.log("Location_Set", cgi);
+//	console.log("Location_Set", cgi);
 	exports.CGI( device, cgi, function(error, response) {
 		if( error ) {
 			callback( error, response );
@@ -461,7 +452,7 @@ exports.Upload_Firmare = function( device , options, callback ) {
 			return;
 		}
 		//Possible an old API version.  Try the legacy firmware upload
-		console.error("Firmware upgrade failed. Trying the legacy upgrade API");
+//		console.error("Firmware upgrade failed. Trying the legacy upgrade API");
 		VapixDigest.upload( device, "firmware_legacy", "firmware.bin", null, fs.createReadStream(options), function( error, response) {
 			if( error ) {
 				callback(error, response);
@@ -521,7 +512,7 @@ exports.Upload_ACAP = function( device , options, callback ) {
 			callback( error, response );
 			return;
 		}
-		console.log("ACAP upload failed.  Testing legacy ACAP upload CGI...");
+//		console.log("ACAP upload failed.  Testing legacy ACAP upload CGI...");
 		VapixDigest.upload( device, "acap_legacy", "acap.eap", null, fs.createReadStream(options), function( error, response) {
 			callback( error, response );
 		});
