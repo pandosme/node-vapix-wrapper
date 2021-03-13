@@ -1,3 +1,5 @@
+//Copyright (c) 2021 Fred Juhlin
+
 const fs = require("fs");
 const VapixDigest = require("./vapix-digest.js");
 const VapixParser = require("./vapix-parser.js");
@@ -487,16 +489,49 @@ exports.Upload_Overlay = function( device, filename, options, callback ) {
 
 exports.Upload_ACAP = function( device , options, callback ) {
 	// options may be a filepath or a file buffer
+
+	if(!options) {  
+		callback("Invalid input","Data must be a buffer or a filepath string");
+		return;
+	}
 	
-	//If file buffer
 	if( Buffer.isBuffer(options)  ) {
 		VapixDigest.upload( device, "acap", "acap.eap", null, options, function( error, response) {
-			callback( error, response );
+			if(!error) {
+				callback( error, response );
+				return;
+			}
+			VapixDigest.upload( device, "acap_legacy", "acap.eap", null, options, function( error, response) {
+				if( error ) {
+					callback( error, response );
+					return;
+				}
+				var body = response.trim();
+				switch( body ) {
+					case "OK":
+						callback( false, "ACAP installed" );
+					break;
+					case "Error: 1":
+						callback( "ACAP install failed", "Invalid file type" );
+					break;
+					case "Error: 2":
+						callback( "ACAP install failed", "File verification failed" );
+					break;
+					case "Error: 3":
+						callback( "ACAP install failed", "File is too large or the storage is full" );
+					break;
+					case "Error: 5":
+					case "Error: 10":
+						callback( "ACAP install failed", "File is not compatible with the HW or FW" );
+					break;
+					default:
+						callback( "ACAP install failed", body );
+					break;
+				}
+			});
 		});
 		return;
 	}
-
-	//If file path
 	
 	if( typeof options !== "string" ) {
 		callback("Invalid input","Invalid filepath or buffer");
@@ -514,11 +549,35 @@ exports.Upload_ACAP = function( device , options, callback ) {
 		}
 //		console.log("ACAP upload failed.  Testing legacy ACAP upload CGI...");
 		VapixDigest.upload( device, "acap_legacy", "acap.eap", null, fs.createReadStream(options), function( error, response) {
-			callback( error, response );
+			if( error ) {
+				callback( error, response );
+				return;
+			}
+			var body = response.trim();
+			switch( body ) {
+				case "OK":
+					callback( false, "ACAP installed" );
+				break;
+				case "Error: 1":
+					callback( "ACAP install failed", "Invalid file type" );
+				break;
+				case "Error: 2":
+					callback( "ACAP install failed", "File verification failed" );
+				break;
+				case "Error: 3":
+					callback( "ACAP install failed", "File is too large or the storage is full" );
+				break;
+				case "Error: 5":
+				case "Error: 10":
+					callback( "ACAP install failed", "File is not compatible with the HW or FW" );
+				break;
+				default:
+					callback( "ACAP install failed", body );
+				break;
+			}
 		});
 	});
 }
-
 
 exports.Certificates_Get = function( device, certificateID, callback ) {
 	var body = '<tds:GetCertificateInformation xmlns="http://www.onvif.org/ver10/device/wsdl">';

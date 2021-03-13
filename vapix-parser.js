@@ -1,3 +1,5 @@
+//Copyright (c) 2021 Fred Juhlin
+
 var exports = module.exports = {};
 const xml2js = require('xml2js');
 

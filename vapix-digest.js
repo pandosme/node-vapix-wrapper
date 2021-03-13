@@ -1,3 +1,5 @@
+//Copyright (c) 2021 Fred Juhlin
+
 const xml2js = require('xml2js');
 const got = require("got");
 const digestAuth = require("@mreal/digest-auth");
